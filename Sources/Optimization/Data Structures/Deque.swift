@@ -9,6 +9,8 @@
 ///
 /// A queue operates considerably faster than an `Array` when both ``enqueue(_:)`` and ``dequeue()`` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
 ///
+/// > Benchmark: Deque is faster on removal tests than arrays when the number of elements is greater than 4,000.
+///
 /// ## Topics
 ///
 /// ### Sequence Accessor
@@ -86,6 +88,7 @@ public final class Deque<Element> {
         }
     }
     
+    
     /// Append an element to the last.
     ///
     /// - Complexity: O(*1*)
@@ -130,6 +133,7 @@ public final class Deque<Element> {
         self.count &+= 1
     }
     
+    
     /// Removes and returns the first element in the queue.
     ///
     /// On deque, the node is removed from the queue, along with the other nodes' links to it.
@@ -151,17 +155,6 @@ public final class Deque<Element> {
         
         count &-= 1
         return first.content
-    }
-    
-    /// Iterate through the deque without removing any of its elements.
-    @inlinable
-    public func forEach<E: Error>(_ block: (_ element: Element) throws(E) -> Void) throws(E) {
-        var current = front
-        
-        while let node = current {
-            try block(node.content)
-            current = node.next
-        }
     }
     
     /// Removes and returns the last element in the queue.
@@ -205,16 +198,28 @@ public final class Deque<Element> {
             self.front = self.front?.next
         } else if node === self.back {
             self.back = self.back?.prev
+        } else {
+            node.prev?.next = node.next
+            node.next?.prev = node.prev
         }
-        
-        node.prev?.next = node.next
-        node.next?.prev = node.prev
         
         node.prev = nil
         node.next = nil
         
         count &-= 1
         return node.content
+    }
+    
+    
+    /// Iterate through the deque without removing any of its elements.
+    @inlinable
+    public func forEach<E: Error>(_ block: (_ element: Element) throws(E) -> Void) throws(E) {
+        var current = front
+        
+        while let node = current {
+            try block(node.content)
+            current = node.next
+        }
     }
     
 }
@@ -291,8 +296,8 @@ extension Array {
     /// Initialize an array with a deque.
     ///
     /// - Parameters:
-    ///   - deque: The source deque. Such deque is destroyed after initialization.
-    public init(_ deque: Deque<Element>) {
+    ///   - deque: The source deque. Such deque borrowed to iterate.
+    public init(_ deque: borrowing Deque<Element>) {
         self = []
         self.reserveCapacity(deque.count)
         

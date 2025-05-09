@@ -7,7 +7,7 @@
 
 import Testing
 @testable
-import Essentials
+import Optimization
 
 
 @Suite
@@ -22,7 +22,7 @@ struct QueueTests {
     
     @Test
     func enqueue() throws {
-        var queue = Queue<Int>()
+        let queue = Queue<Int>()
         queue.enqueue(1)
         queue.enqueue(2)
         queue.enqueue(3)

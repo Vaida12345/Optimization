@@ -7,7 +7,7 @@
 
 import Testing
 @testable
-import Essentials
+import Optimization
 
 
 @Suite
