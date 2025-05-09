@@ -6,6 +6,13 @@
 //
 
 
+/// First in, first out Queue.
+///
+/// A queue operates considerably faster than an `Array` when both ``enqueue(_:)`` and ``dequeue()`` operations are required. If only `enqueue` is needed, using `Array.append` would always outperform `enqueue`.
+///
+/// > Benchmark: Deque is faster on `removeFirst` tests than arrays when the number of elements is greater than 200.
+///
+/// > Tip: This structure is preferred compared to ``Queue``.
 public final class RingBuffer<Element> {
     
     // MARK: - Storage
