@@ -273,6 +273,14 @@ public final class InlineDeque<Element> {
         self.buffer[Int(node.index)].content = value
     }
     
+    /// Updates the node at the given index.
+    ///
+    /// - Complexity: O(*1*)
+    @inlinable
+    public func update<E: Error>(_ node: Node, block: (_ content: inout Element) throws(E) -> Void) throws(E) {
+        try block(&self.buffer[Int(node.index)].content)
+    }
+    
     
     /// Iterate through the deque without removing any of its elements.
     @inlinable
