@@ -10,6 +10,8 @@
 /// A specialized tree-based data structure.
 ///
 /// A `Heap` is both an iterator and a sequence. When forming such iterator, a copy of the heap is made, ensuring the original copy is intact during iteration.
+///
+/// > Benchmark: Deque is faster on sorting tests than arrays when the number of elements is greater than 100.
 public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable {
     
     private var contents: [Element]

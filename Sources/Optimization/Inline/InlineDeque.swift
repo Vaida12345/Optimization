@@ -75,7 +75,7 @@ public final class InlineDeque<Element> {
     public struct Node {
         
         /// The content contained in the node
-        public let content: Element
+        public var content: Element
         
         @usableFromInline
         internal var index: Int32
