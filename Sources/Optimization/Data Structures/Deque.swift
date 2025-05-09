@@ -7,7 +7,7 @@
 
 /// First in, first out Queue where each note has both `prev` and `next`.
 ///
-/// A queue operates considerably faster than an `Array` when both ``enqueue(_:)`` and ``dequeue()`` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
+/// A queue operates considerably faster than an `Array` when both `enqueue(_:)` and `dequeue()` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
 ///
 /// > Benchmark: Deque is faster on removal tests than arrays when the number of elements is greater than 4,000.
 ///
@@ -232,7 +232,7 @@ extension Deque: IteratorProtocol {
     
     /// Returns the next element in the queue.
     ///
-    /// - Complexity: O(*1*), alias to ``dequeue()``.
+    /// - Complexity: O(*1*), alias to ``removeLast()``.
     @inlinable
     public func next() -> Element? {
         self.removeLast()

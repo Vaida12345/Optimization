@@ -8,7 +8,7 @@
 
 /// First in, first out Queue.
 ///
-/// A queue operates considerably faster than an `Array` when both ``enqueue(_:)`` and ``dequeue()`` operations are required. If only `enqueue` is needed, using `Array.append` would always outperform `enqueue`.
+/// A queue operates considerably faster than an `Array` when both `enqueue(_:)` and `dequeue()` operations are required. If only `enqueue` is needed, using `Array.append` would always outperform `enqueue`.
 ///
 /// > Benchmark: Deque is faster on `removeFirst` tests than arrays when the number of elements is greater than 200.
 ///
@@ -157,7 +157,7 @@ extension RingBuffer: IteratorProtocol {
     
     /// Returns the next element in the queue.
     ///
-    /// - Complexity: O(*1*), alias to ``dequeue()``.
+    /// - Complexity: O(*1*), alias to ``removeFirst()``.
     @inlinable
     public func next() -> Element? {
         self.removeFirst()
@@ -201,7 +201,7 @@ extension Array {
     /// Initialize an array with a deque.
     ///
     /// - Parameters:
-    ///   - deque: The source deque. Such deque borrowed to iterate.
+    ///   - ring: The source deque. Such deque borrowed to iterate.
     @inlinable
     public init(_ ring: borrowing RingBuffer<Element>) {
         self = []

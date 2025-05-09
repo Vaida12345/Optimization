@@ -152,7 +152,7 @@ extension Array {
     /// Initialize an array with a deque.
     ///
     /// - Parameters:
-    ///   - deque: The source deque. Such deque borrowed to iterate.
+    ///   - queue: The source deque. Such deque borrowed to iterate.
     public init(_ queue: borrowing Queue<Element>) {
         self = []
         self.reserveCapacity(queue.count)

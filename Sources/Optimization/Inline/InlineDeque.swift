@@ -8,8 +8,8 @@
 
 /// First in, first out Queue where each note has both `prev` and `next`.
 ///
-/// A queue operates considerably faster than an `Array` when both ``enqueue(_:)`` and ``dequeue()`` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
-/// 
+/// A queue operates considerably faster than an `Array` when both `enqueue(_:)` and `dequeue()` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
+///
 /// > Benchmark: Deque is faster on removal tests than arrays when the number of elements is greater than 400.
 ///
 /// > Tip: This structure is preferred compared to ``Deque`` when you know the capacity in advance while requiring the two-directional node.
@@ -206,13 +206,11 @@ public final class InlineDeque<Element> {
         return back.content
     }
     
-    /// Removes the node from the parent deque by linking its ``Node/prev`` and ``Node/next``.
+    /// Removes the node from the parent deque by linking its `prev` and `next`.
     ///
     /// - Returns: The element that the node contains.
     ///
     /// - warning: It is the user's responsibility to ensure `self` owns `node`.
-    ///
-    /// > Side Effect: This method also *cleans* `node` by removing its ``Node/prev`` and ``Node/next``.
     ///
     /// - Complexity: O(*1*)
     @discardableResult
@@ -281,7 +279,7 @@ extension InlineDeque: IteratorProtocol {
     
     /// Returns the next element in the queue.
     ///
-    /// - Complexity: O(*1*), alias to ``dequeue()``.
+    /// - Complexity: O(*1*), alias to ``removeLast()``.
     @inlinable
     public func next() -> Element? {
         self.removeLast()
