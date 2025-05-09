@@ -35,15 +35,15 @@ struct InlineDequeTests {
         #expect(deque.count == 2)
         #expect(deque.first == 1)
         #expect(deque.last == 2)
-        #expect(deque.front!.next == deque.back?.index)
-        #expect(deque.back!.prev == deque.front?.index)
+        #expect(deque.firstIndex!.next == deque.lastIndex?.index)
+        #expect(deque.lastIndex!.prev == deque.firstIndex?.index)
         
         deque.prepend(0)
         #expect(deque.count == 3)
         #expect(deque.first == 0)
         #expect(deque.last == 2)
-        #expect(deque.front!.content == 0)
-        #expect(deque.node(after: deque.front!)?.content == 1)
+        #expect(deque[deque.firstIndex!] == 0)
+        #expect(deque[deque.index(after: deque.firstIndex!)!] == 1)
     }
     
     @Test func testRemoveFirst() {
@@ -52,8 +52,8 @@ struct InlineDequeTests {
         #expect(removed == 1)
         #expect(deque.count == 2)
         #expect(deque.first == 2)
-        #expect(deque.front!.prev == nil)
-        #expect(deque.back!.content == 3)
+        #expect(deque.firstIndex!.prev == nil)
+        #expect(deque[deque.lastIndex!] == 3)
     }
     
     @Test func testRemoveLast() {
@@ -62,8 +62,8 @@ struct InlineDequeTests {
         #expect(removed == 3)
         #expect(deque.count == 2)
         #expect(deque.last == 2)
-        #expect(deque.back!.next == nil)
-        #expect(deque.front!.content == 1)
+        #expect(deque.lastIndex!.next == nil)
+        #expect(deque[deque.firstIndex!] == 1)
     }
     
     @Test func testRemoveFromEmpty() {
@@ -74,29 +74,29 @@ struct InlineDequeTests {
     
     @Test func testRemoveNodeMiddle() {
         let deque = InlineDeque([1, 2, 3, 4])
-        let middle = deque.front!.next!      // node with content 2
-        let removed = deque.remove(deque.node(at: middle))
+        let middle = deque.firstIndex!.next!      // node with content 2
+        let removed = deque.remove(at: deque._index(at: middle))
         #expect(deque.description == "[1, 3, 4]")
         #expect(removed == 2)
         #expect(deque.count == 3)
         #expect(deque.first == 1)
         #expect(deque.last == 4)
         // check links bypassed
-        #expect(deque.node(at: deque.front!.next!).content == 3)
-        #expect(deque.front!.next == deque.back!.prev)
+        #expect(deque[deque._index(at: deque.firstIndex!.next!)] == 3)
+        #expect(deque.firstIndex!.next == deque.lastIndex!.prev)
     }
     
     @Test func testRemoveNodeAtEdges() {
         let deque = InlineDeque([1, 2, 3])
-        let firstNode = deque.front!
-        let lastNode = deque.back!
+        let firstNode = deque.firstIndex!
+        let lastNode = deque.lastIndex!
         
-        let removedFirst = deque.remove(firstNode)
+        let removedFirst = deque.remove(at: firstNode)
         #expect(removedFirst == 1)
         #expect(deque.count == 2)
         #expect(deque.first == 2)
         
-        let removedLast = deque.remove(lastNode)
+        let removedLast = deque.remove(at: lastNode)
         #expect(removedLast == 3)
         #expect(deque.count == 1)
         #expect(deque.last == 2)

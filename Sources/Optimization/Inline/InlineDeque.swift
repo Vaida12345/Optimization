@@ -8,16 +8,24 @@
 
 /// First in, first out Queue where each note has both `prev` and `next`.
 ///
+/// The main difference between ``InlineDeque`` and ``RingBuffer`` is that ``InlineDeque`` is able to remove elements at any index at O(*1*)
+///
 /// A queue operates considerably faster than an `Array` when both `enqueue(_:)` and `dequeue()` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
 ///
 /// > Benchmark: Deque is faster on removal tests than arrays when the number of elements is greater than 400.
 ///
-/// > Tip: This structure is preferred compared to ``Deque`` when you know the capacity in advance while requiring the two-directional node.
+/// - Tip: This structure is preferred compared to ``Deque`` when you know the capacity in advance while requiring the two-directional node.
+///
+/// - Note: When an element is removed, its reference is removed, but not the allocation. The allocation for all elements is removed on `deinit`.
 public final class InlineDeque<Element> {
     
     /// The underlying buffer.
     @usableFromInline
-    internal let buffer: UnsafeMutableBufferPointer<Node>
+    internal let indexBuffer: UnsafeMutableBufferPointer<Index>
+    
+    @usableFromInline
+    internal let buffer: UnsafeMutableBufferPointer<Element>
+    
     
     /// The number of elements in the queue.
     ///
@@ -36,46 +44,44 @@ public final class InlineDeque<Element> {
     
     /// The first element stored
     @inlinable
-    public var front: Node? {
+    public var firstIndex: Index? {
         guard let frontIndex else { return nil }
-        return self.buffer[Int(frontIndex)]
+        return self.indexBuffer[Int(frontIndex)]
     }
     
     /// The last element stored
     @inlinable
-    public var back: Node? {
+    public var lastIndex: Index? {
         guard let backIndex else { return nil }
-        return self.buffer[Int(backIndex)]
+        return self.indexBuffer[Int(backIndex)]
     }
     
     /// The first element stored
     @inlinable
     public var first: Element? {
-        self.front?.content
+        self.firstIndex.map({ self[$0] })
     }
     
     /// The last element stored
     @inlinable
     public var last: Element? {
-        self.back?.content
+        self.lastIndex.map({ self[$0] })
     }
     
     @inlinable
     public init(capacity: Int) {
+        indexBuffer = .allocate(capacity: capacity)
         buffer = .allocate(capacity: capacity)
     }
     
     @inlinable
     deinit {
-        self.buffer.deallocate()
+        self.indexBuffer.deallocate()
     }
     
     
     /// A two-directional Node
-    public struct Node {
-        
-        /// The content contained in the node
-        public var content: Element
+    public struct Index {
         
         @usableFromInline
         internal var index: Int32
@@ -90,8 +96,7 @@ public final class InlineDeque<Element> {
         
         
         @inlinable
-        init(_ content: Element, index: Int32) {
-            self.content = content
+        init(_ index: Int32) {
             self.index = index
         }
     }
@@ -119,22 +124,23 @@ public final class InlineDeque<Element> {
     ///
     /// - Complexity: O(*1*)
     public func append(_ element: Element) {
-        precondition(self.stored < self.buffer.count, "append(_:) exceeds capacity")
+        precondition(self.stored < self.indexBuffer.count, "append(_:) exceeds capacity")
         
-        var node = Node(element, index: stored)
+        var node = Index(stored)
         
         if frontIndex == nil {
             self.frontIndex = 0
             self.backIndex = 0
         } else if let backIndex {
-            self.buffer[Int(backIndex)].next = stored
+            self.indexBuffer[Int(backIndex)].next = stored
             node.prev = backIndex
             self.backIndex = stored
         } else {
             assertionFailure()
         }
         
-        self.buffer.initializeElement(at: Int(stored), to: node)
+        self.indexBuffer.initializeElement(at: Int(stored), to: node)
+        self.buffer.initializeElement(at: Int(node.index), to: element)
         self.stored &+= 1
         self.count &+= 1
     }
@@ -143,22 +149,23 @@ public final class InlineDeque<Element> {
     ///
     /// - Complexity: O(*1*)
     public func prepend(_ element: Element) {
-        precondition(self.stored < self.buffer.count, "prepend(_:) exceeds capacity")
+        precondition(self.stored < self.indexBuffer.count, "prepend(_:) exceeds capacity")
         
-        var node = Node(element, index: stored)
+        var node = Index(stored)
         
         if backIndex == nil {
             self.frontIndex = 0
             self.backIndex = 0
         } else if let frontIndex {
-            self.buffer[Int(frontIndex)].prev = stored
+            self.indexBuffer[Int(frontIndex)].prev = stored
             node.next = frontIndex
             self.frontIndex = stored
         } else {
             assertionFailure()
         }
         
-        self.buffer.initializeElement(at: Int(stored), to: node)
+        self.indexBuffer.initializeElement(at: Int(stored), to: node)
+        self.buffer.initializeElement(at: Int(node.index), to: element)
         self.stored &+= 1
         self.count &+= 1
     }
@@ -171,18 +178,18 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     public func removeFirst() -> Element? {
         guard let firstIndex = self.frontIndex else { return nil }
-        let front = self.buffer[Int(firstIndex)]
+        let front = self.indexBuffer[Int(firstIndex)]
         
         if self.backIndex == firstIndex {
             self.frontIndex = nil
             self.backIndex = nil
         } else {
             self.frontIndex = front.next
-            self.buffer[Int(frontIndex!)].prev = nil
+            self.indexBuffer[Int(frontIndex!)].prev = nil
         }
         
         count &-= 1
-        return front.content
+        return self[front]
     }
     
     /// Removes and returns the last element in the queue.
@@ -192,18 +199,18 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     public func removeLast() -> Element? {
         guard let backIndex else { return nil }
-        let back = self.buffer[Int(backIndex)]
+        let back = self.indexBuffer[Int(backIndex)]
         
         if self.frontIndex == backIndex {
             self.frontIndex = nil
             self.backIndex = nil
         } else {
             self.backIndex = back.prev
-            self.buffer[Int(self.backIndex!)].next = nil
+            self.indexBuffer[Int(self.backIndex!)].next = nil
         }
         
         count &-= 1
-        return back.content
+        return self[back]
     }
     
     /// Removes the node from the parent deque by linking its `prev` and `next`.
@@ -214,24 +221,24 @@ public final class InlineDeque<Element> {
     ///
     /// - Complexity: O(*1*)
     @discardableResult
-    public func remove(_ node: Node) -> Element {
+    public func remove(at index: Index) -> Element {
         if self.frontIndex == self.backIndex {
             self.frontIndex = nil
             self.backIndex = nil
-        } else if frontIndex == node.index {
-            self.frontIndex = self.buffer[Int(frontIndex!)].next
-            self.buffer[Int(self.frontIndex!)].prev = nil
-        } else if backIndex == node.index {
-            self.backIndex = self.buffer[Int(backIndex!)].prev
-            self.buffer[Int(self.backIndex!)].next = nil
-        } else if let prev = node.prev,
-                  let next = node.next {
-            self.buffer[Int(next)].prev = prev
-            self.buffer[Int(prev)].next = next
+        } else if frontIndex == index.index {
+            self.frontIndex = self.indexBuffer[Int(frontIndex!)].next
+            self.indexBuffer[Int(self.frontIndex!)].prev = nil
+        } else if backIndex == index.index {
+            self.backIndex = self.indexBuffer[Int(backIndex!)].prev
+            self.indexBuffer[Int(self.backIndex!)].next = nil
+        } else if let prev = index.prev,
+                  let next = index.next {
+            self.indexBuffer[Int(next)].prev = prev
+            self.indexBuffer[Int(prev)].next = next
         }
         
         count &-= 1
-        return node.content
+        return self[index]
     }
     
     
@@ -239,46 +246,38 @@ public final class InlineDeque<Element> {
     ///
     /// - Complexity: O(*1*)
     @inlinable
-    public func node(after node: Node) -> Node? {
+    public func index(after node: Index) -> Index? {
         // fetch the new node
-        let node = self.node(at: node.index)
+        let node = self._index(at: node.index)
         guard let next = node.next else { return nil }
-        return self.buffer[Int(next)]
+        return self.indexBuffer[Int(next)]
     }
     
     /// The predecessor of `node`.
     ///
     /// - Complexity: O(*1*)
     @inlinable
-    public func node(before node: Node) -> Node? {
+    public func index(before node: Index) -> Index? {
         // fetch the new node
-        let node = self.node(at: node.index)
+        let node = self._index(at: node.index)
         guard let prev = node.prev else { return nil }
-        return self.buffer[Int(prev)]
+        return self.indexBuffer[Int(prev)]
     }
     
     /// Returns the node at the given index.
     ///
     /// - Complexity: O(*1*)
     @inlinable
-    internal func node(at index: Int32) -> Node {
-        self.buffer[Int(index)]
+    internal func _index(at _index: Int32) -> Index {
+        self.indexBuffer[Int(_index)]
     }
     
     /// Updates the node at the given index.
     ///
     /// - Complexity: O(*1*)
     @inlinable
-    public func update(_ value: Element, to node: Node) {
-        self.buffer[Int(node.index)].content = value
-    }
-    
-    /// Updates the node at the given index.
-    ///
-    /// - Complexity: O(*1*)
-    @inlinable
-    public func update<E: Error>(_ node: Node, block: (_ content: inout Element) throws(E) -> Void) throws(E) {
-        try block(&self.buffer[Int(node.index)].content)
+    public func update<E: Error>(at index: Index, block: (_ content: inout Element) throws(E) -> Void) throws(E) {
+        try block(&self[index])
     }
     
     
@@ -286,11 +285,22 @@ public final class InlineDeque<Element> {
     @inlinable
     public func forEach<E: Error>(_ block: (_ element: Element) throws(E) -> Void) throws(E) {
         guard let frontIndex else { return }
-        var current: Node? = self.buffer[Int(frontIndex)]
+        var current: Index? = self.indexBuffer[Int(frontIndex)]
         
         while let node = current {
-            try block(node.content)
-            current = self.node(after: node)
+            try block(self[node])
+            current = self.index(after: node)
+        }
+    }
+    
+    
+    @inlinable
+    public subscript(_ index: Index) -> Element {
+        get {
+            self.buffer[Int(index.index)]
+        }
+        set {
+            self.buffer[Int(index.index)] = newValue
         }
     }
     
@@ -339,32 +349,32 @@ extension InlineDeque: ExpressibleByArrayLiteral {
 }
 
 
-extension InlineDeque.Node: Equatable where Element: Equatable {
+extension InlineDeque.Index: Equatable where Element: Equatable {
     
     /// Equitable implementation.
     ///
     /// The equitable implementation never checks for address, to check address, use `===` instead.
     @inlinable
-    public static func == (_ lhs: InlineDeque.Node, _ rhs: InlineDeque.Node) -> Bool {
-        lhs.content == rhs.content
+    public static func == (_ lhs: InlineDeque.Index, _ rhs: InlineDeque.Index) -> Bool {
+        lhs.index == rhs.index
     }
     
 }
 
-extension InlineDeque.Node: CustomStringConvertible where Element: CustomStringConvertible {
+extension InlineDeque.Index: CustomStringConvertible where Element: CustomStringConvertible {
     
     public var description: String {
-        self.content.description
+        "Index(__underlyingNoncomparableIndex: \(index))"
     }
     
 }
 
 
-extension InlineDeque.Node: Hashable where Element: Hashable {
+extension InlineDeque.Index: Hashable where Element: Hashable {
     
     @inlinable
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(content)
+        hasher.combine(index)
     }
     
 }
