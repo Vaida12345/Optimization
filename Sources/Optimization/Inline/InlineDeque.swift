@@ -335,6 +335,14 @@ extension InlineDeque.Node: Equatable where Element: Equatable {
     
 }
 
+extension InlineDeque.Node: CustomStringConvertible where Element: CustomStringConvertible {
+    
+    public var description: String {
+        self.content.description
+    }
+    
+}
+
 
 extension InlineDeque.Node: Hashable where Element: Hashable {
     

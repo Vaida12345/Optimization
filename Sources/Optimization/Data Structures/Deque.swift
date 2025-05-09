@@ -296,6 +296,14 @@ extension Deque.Node: Hashable where Element: Hashable {
     
 }
 
+extension Deque.Node: CustomStringConvertible where Element: CustomStringConvertible {
+    
+    public var description: String {
+        self.content.description
+    }
+    
+}
+
 
 extension Array {
     
