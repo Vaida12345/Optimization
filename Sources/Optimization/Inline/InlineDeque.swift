@@ -220,8 +220,10 @@ public final class InlineDeque<Element> {
             self.backIndex = nil
         } else if frontIndex == node.index {
             self.frontIndex = self.buffer[Int(frontIndex!)].next
+            self.buffer[Int(self.frontIndex!)].prev = nil
         } else if backIndex == node.index {
             self.backIndex = self.buffer[Int(backIndex!)].prev
+            self.buffer[Int(self.backIndex!)].next = nil
         } else if let prev = node.prev,
                   let next = node.next {
             self.buffer[Int(next)].prev = prev
@@ -238,6 +240,8 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     @inlinable
     public func node(after node: Node) -> Node? {
+        // fetch the new node
+        let node = self.node(at: node.index)
         guard let next = node.next else { return nil }
         return self.buffer[Int(next)]
     }
@@ -247,6 +251,8 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     @inlinable
     public func node(before node: Node) -> Node? {
+        // fetch the new node
+        let node = self.node(at: node.index)
         guard let prev = node.prev else { return nil }
         return self.buffer[Int(prev)]
     }

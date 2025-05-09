@@ -199,8 +199,10 @@ public final class Deque<Element> {
             self.back = nil
         } else if node === self.front {
             self.front = self.front?.next
+            self.front?.prev = nil
         } else if node === self.back {
             self.back = self.back?.prev
+            self.back?.next = nil
         } else {
             node.prev?.next = node.next
             node.next?.prev = node.prev
