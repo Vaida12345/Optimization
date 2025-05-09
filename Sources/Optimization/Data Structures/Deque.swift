@@ -37,11 +37,13 @@ public final class Deque<Element> {
     public private(set) var count: Int
     
     /// The first element stored
+    @inlinable
     public var first: Element? {
         front?.content
     }
     
     /// The last element stored
+    @inlinable
     public var last: Element? {
         back?.content
     }
@@ -68,6 +70,7 @@ public final class Deque<Element> {
     /// Returns whether the queue is empty.
     ///
     /// - Complexity: O(*1*)
+    @inlinable
     public var isEmpty: Bool {
         front == nil && back == nil
     }
@@ -240,6 +243,7 @@ extension Deque: IteratorProtocol {
 extension Deque: CustomStringConvertible where Element: CustomStringConvertible {
     
     /// The description to the queue.
+    @inlinable
     public var description: String {
         var current = self.front
         var description = "["
@@ -297,6 +301,7 @@ extension Array {
     ///
     /// - Parameters:
     ///   - deque: The source deque. Such deque borrowed to iterate.
+    @inlinable
     public init(_ deque: borrowing Deque<Element>) {
         self = []
         self.reserveCapacity(deque.count)

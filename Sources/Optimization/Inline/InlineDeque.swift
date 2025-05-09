@@ -10,52 +10,62 @@
 ///
 /// A queue operates considerably faster than an `Array` when both ``enqueue(_:)`` and ``dequeue()`` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
 /// 
-/// > Benchmark: Deque is faster on removal tests than arrays when the number of elements is greater than 800.
+/// > Benchmark: Deque is faster on removal tests than arrays when the number of elements is greater than 400.
+///
+/// > Tip: This structure is preferred compared to ``Deque`` when you know the capacity in advance while requiring the two-directional node.
 public final class InlineDeque<Element> {
     
     /// The underlying buffer.
-    private let buffer: UnsafeMutableBufferPointer<Node>
+    @usableFromInline
+    internal let buffer: UnsafeMutableBufferPointer<Node>
     
     /// The number of elements in the queue.
     ///
     /// - Complexity: O(*0*), stored property.
-    public private(set) var count: Int
+    public internal(set) var count: Int = 0
+    
     /// The endIndex of the buffer
     private var stored: Int32 = 0
     
     
-    public private(set) var frontIndex: Int32?
-    public private(set) var backIndex: Int32?
+    @usableFromInline
+    internal var frontIndex: Int32?
+    @usableFromInline
+    internal var backIndex: Int32?
     
     
     /// The first element stored
+    @inlinable
     public var front: Node? {
         guard let frontIndex else { return nil }
         return self.buffer[Int(frontIndex)]
     }
     
     /// The last element stored
+    @inlinable
     public var back: Node? {
         guard let backIndex else { return nil }
         return self.buffer[Int(backIndex)]
     }
     
     /// The first element stored
+    @inlinable
     public var first: Element? {
         self.front?.content
     }
     
     /// The last element stored
+    @inlinable
     public var last: Element? {
         self.back?.content
     }
     
-    
+    @inlinable
     public init(capacity: Int) {
         buffer = .allocate(capacity: capacity)
-        self.count = 0
     }
     
+    @inlinable
     deinit {
         self.buffer.deallocate()
     }
@@ -67,15 +77,19 @@ public final class InlineDeque<Element> {
         /// The content contained in the node
         public let content: Element
         
+        @usableFromInline
         internal var index: Int32
         
         /// The node's predecessor.
+        @usableFromInline
         internal var prev: Int32?
         
         /// The node's successor.
+        @usableFromInline
         internal var next: Int32?
         
         
+        @inlinable
         init(_ content: Element, index: Int32) {
             self.content = content
             self.index = index
@@ -86,6 +100,7 @@ public final class InlineDeque<Element> {
     /// Returns whether the queue is empty.
     ///
     /// - Complexity: O(*1*)
+    @inlinable
     public var isEmpty: Bool {
         frontIndex == nil && backIndex == nil
     }
@@ -221,23 +236,34 @@ public final class InlineDeque<Element> {
     
     
     /// The successor of `node`.
+    ///
+    /// - Complexity: O(*1*)
+    @inlinable
     public func node(after node: Node) -> Node? {
         guard let next = node.next else { return nil }
         return self.buffer[Int(next)]
     }
     
     /// The predecessor of `node`.
+    ///
+    /// - Complexity: O(*1*)
+    @inlinable
     public func node(before node: Node) -> Node? {
         guard let prev = node.prev else { return nil }
         return self.buffer[Int(prev)]
     }
     
+    /// Returns the node at the given index.
+    ///
+    /// - Complexity: O(*1*)
+    @inlinable
     public func node(at index: Int32) -> Node {
         self.buffer[Int(index)]
     }
     
     
     /// Iterate through the deque without removing any of its elements.
+    @inlinable
     public func forEach<E: Error>(_ block: (_ element: Element) throws(E) -> Void) throws(E) {
         guard let frontIndex else { return }
         var current: Node? = self.buffer[Int(frontIndex)]
@@ -266,6 +292,7 @@ extension InlineDeque: IteratorProtocol {
 extension InlineDeque: CustomStringConvertible where Element: CustomStringConvertible {
     
     /// The description to the queue.
+    @inlinable
     public var description: String {
         var description = "["
         
@@ -321,6 +348,7 @@ extension Array {
     ///
     /// - Parameters:
     ///   - deque: The source deque. Such deque borrowed to iterate.
+    @inlinable
     public init(_ deque: borrowing InlineDeque<Element>) {
         self = []
         self.reserveCapacity(deque.count)
