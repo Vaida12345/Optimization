@@ -261,8 +261,16 @@ public final class InlineDeque<Element> {
     ///
     /// - Complexity: O(*1*)
     @inlinable
-    public func node(at index: Int32) -> Node {
+    internal func node(at index: Int32) -> Node {
         self.buffer[Int(index)]
+    }
+    
+    /// Updates the node at the given index.
+    ///
+    /// - Complexity: O(*1*)
+    @inlinable
+    public func update(_ value: Element, to node: Node) {
+        self.buffer[Int(node.index)].content = value
     }
     
     
