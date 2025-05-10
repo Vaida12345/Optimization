@@ -77,6 +77,7 @@ public final class InlineDeque<Element> {
     @inlinable
     deinit {
         self.indexBuffer.deallocate()
+        self.buffer.deallocate()
     }
     
     
