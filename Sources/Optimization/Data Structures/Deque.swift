@@ -72,7 +72,7 @@ public final class Deque<Element> {
     /// - Complexity: O(*1*)
     @inlinable
     public var isEmpty: Bool {
-        front == nil && back == nil
+        front == nil
     }
     
     /// Crates an empty queue.

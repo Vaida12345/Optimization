@@ -36,7 +36,7 @@ public final class Queue<Element> {
     ///
     /// - Complexity: O(*1*)
     public var isEmpty: Bool {
-        front == nil && back == nil
+        front == nil
     }
     
     /// Crates an empty queue.

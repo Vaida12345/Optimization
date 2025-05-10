@@ -33,27 +33,27 @@ public final class InlineDeque<Element> {
     public internal(set) var count: Int = 0
     
     /// The endIndex of the buffer
-    private var stored: Int32 = 0
+    private var stored: Int = 0
     
     
     @usableFromInline
-    internal var frontIndex: Int32?
+    internal var frontIndex: Int?
     @usableFromInline
-    internal var backIndex: Int32?
+    internal var backIndex: Int?
     
     
     /// The first element stored
     @inlinable
     public var firstIndex: Index? {
         guard let frontIndex else { return nil }
-        return self.indexBuffer[Int(frontIndex)]
+        return self.indexBuffer[frontIndex]
     }
     
     /// The last element stored
     @inlinable
     public var lastIndex: Index? {
         guard let backIndex else { return nil }
-        return self.indexBuffer[Int(backIndex)]
+        return self.indexBuffer[backIndex]
     }
     
     /// The first element stored
@@ -84,19 +84,19 @@ public final class InlineDeque<Element> {
     public struct Index {
         
         @usableFromInline
-        internal var index: Int32
+        internal var index: Int
         
         /// The node's predecessor.
         @usableFromInline
-        internal var prev: Int32?
+        internal var prev: Int?
         
         /// The node's successor.
         @usableFromInline
-        internal var next: Int32?
+        internal var next: Int?
         
         
         @inlinable
-        init(_ index: Int32) {
+        init(_ index: Int) {
             self.index = index
         }
     }
@@ -107,7 +107,7 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     @inlinable
     public var isEmpty: Bool {
-        frontIndex == nil && backIndex == nil
+        frontIndex == nil
     }
     
     @inlinable
@@ -132,15 +132,15 @@ public final class InlineDeque<Element> {
             self.frontIndex = 0
             self.backIndex = 0
         } else if let backIndex {
-            self.indexBuffer[Int(backIndex)].next = stored
+            self.indexBuffer[backIndex].next = stored
             node.prev = backIndex
             self.backIndex = stored
         } else {
             assertionFailure()
         }
         
-        self.indexBuffer.initializeElement(at: Int(stored), to: node)
-        self.buffer.initializeElement(at: Int(node.index), to: element)
+        self.indexBuffer.initializeElement(at: stored, to: node)
+        self.buffer.initializeElement(at: node.index, to: element)
         self.stored &+= 1
         self.count &+= 1
     }
@@ -157,15 +157,15 @@ public final class InlineDeque<Element> {
             self.frontIndex = 0
             self.backIndex = 0
         } else if let frontIndex {
-            self.indexBuffer[Int(frontIndex)].prev = stored
+            self.indexBuffer[frontIndex].prev = stored
             node.next = frontIndex
             self.frontIndex = stored
         } else {
             assertionFailure()
         }
         
-        self.indexBuffer.initializeElement(at: Int(stored), to: node)
-        self.buffer.initializeElement(at: Int(node.index), to: element)
+        self.indexBuffer.initializeElement(at: stored, to: node)
+        self.buffer.initializeElement(at: node.index, to: element)
         self.stored &+= 1
         self.count &+= 1
     }
@@ -178,14 +178,14 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     public func removeFirst() -> Element? {
         guard let firstIndex = self.frontIndex else { return nil }
-        let front = self.indexBuffer[Int(firstIndex)]
+        let front = self.indexBuffer[firstIndex]
         
         if self.backIndex == firstIndex {
             self.frontIndex = nil
             self.backIndex = nil
         } else {
             self.frontIndex = front.next
-            self.indexBuffer[Int(frontIndex!)].prev = nil
+            self.indexBuffer[frontIndex!].prev = nil
         }
         
         count &-= 1
@@ -199,14 +199,14 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     public func removeLast() -> Element? {
         guard let backIndex else { return nil }
-        let back = self.indexBuffer[Int(backIndex)]
+        let back = self.indexBuffer[backIndex]
         
         if self.frontIndex == backIndex {
             self.frontIndex = nil
             self.backIndex = nil
         } else {
             self.backIndex = back.prev
-            self.indexBuffer[Int(self.backIndex!)].next = nil
+            self.indexBuffer[self.backIndex!].next = nil
         }
         
         count &-= 1
@@ -226,15 +226,15 @@ public final class InlineDeque<Element> {
             self.frontIndex = nil
             self.backIndex = nil
         } else if frontIndex == index.index {
-            self.frontIndex = self.indexBuffer[Int(frontIndex!)].next
-            self.indexBuffer[Int(self.frontIndex!)].prev = nil
+            self.frontIndex = self.indexBuffer[frontIndex!].next
+            self.indexBuffer[self.frontIndex!].prev = nil
         } else if backIndex == index.index {
-            self.backIndex = self.indexBuffer[Int(backIndex!)].prev
-            self.indexBuffer[Int(self.backIndex!)].next = nil
+            self.backIndex = self.indexBuffer[backIndex!].prev
+            self.indexBuffer[self.backIndex!].next = nil
         } else if let prev = index.prev,
                   let next = index.next {
-            self.indexBuffer[Int(next)].prev = prev
-            self.indexBuffer[Int(prev)].next = next
+            self.indexBuffer[next].prev = prev
+            self.indexBuffer[prev].next = next
         }
         
         count &-= 1
@@ -250,7 +250,7 @@ public final class InlineDeque<Element> {
         // fetch the new node
         let node = self._index(at: node.index)
         guard let next = node.next else { return nil }
-        return self.indexBuffer[Int(next)]
+        return self.indexBuffer[next]
     }
     
     /// The predecessor of `node`.
@@ -261,15 +261,15 @@ public final class InlineDeque<Element> {
         // fetch the new node
         let node = self._index(at: node.index)
         guard let prev = node.prev else { return nil }
-        return self.indexBuffer[Int(prev)]
+        return self.indexBuffer[prev]
     }
     
     /// Returns the node at the given index.
     ///
     /// - Complexity: O(*1*)
     @inlinable
-    internal func _index(at _index: Int32) -> Index {
-        self.indexBuffer[Int(_index)]
+    internal func _index(at _index: Int) -> Index {
+        self.indexBuffer[_index]
     }
     
     /// Updates the node at the given index.
@@ -285,7 +285,7 @@ public final class InlineDeque<Element> {
     @inlinable
     public func forEach<E: Error>(_ block: (_ element: Element) throws(E) -> Void) throws(E) {
         guard let frontIndex else { return }
-        var current: Index? = self.indexBuffer[Int(frontIndex)]
+        var current: Index? = self.indexBuffer[frontIndex]
         
         while let node = current {
             try block(self[node])
@@ -294,13 +294,14 @@ public final class InlineDeque<Element> {
     }
     
     
+    /// - Complexity: O(*1*)
     @inlinable
     public subscript(_ index: Index) -> Element {
         get {
-            self.buffer[Int(index.index)]
+            self.buffer[index.index]
         }
         set {
-            self.buffer[Int(index.index)] = newValue
+            self.buffer[index.index] = newValue
         }
     }
     
