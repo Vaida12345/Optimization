@@ -351,7 +351,7 @@ extension InlineDeque: ExpressibleByArrayLiteral {
 }
 
 
-extension InlineDeque.Index: Equatable where Element: Equatable {
+extension InlineDeque.Index: Equatable {
     
     /// Equitable implementation.
     ///
@@ -372,7 +372,7 @@ extension InlineDeque.Index: CustomStringConvertible where Element: CustomString
 }
 
 
-extension InlineDeque.Index: Hashable where Element: Hashable {
+extension InlineDeque.Index: Hashable {
     
     @inlinable
     public func hash(into hasher: inout Hasher) {
