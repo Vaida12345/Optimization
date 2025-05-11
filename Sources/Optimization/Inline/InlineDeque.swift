@@ -85,7 +85,7 @@ public final class InlineDeque<Element> {
     public struct Index {
         
         @usableFromInline
-        internal var index: Int
+        internal let index: Int
         
         /// The node's predecessor.
         @usableFromInline
@@ -223,6 +223,8 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     @discardableResult
     public func remove(at index: Index) -> Element {
+        // fetch the new node
+        let index = self._index(at: index.index)
         if self.frontIndex == self.backIndex {
             self.frontIndex = nil
             self.backIndex = nil
