@@ -12,7 +12,7 @@
 ///
 /// A queue operates considerably faster than an `Array` when both `enqueue(_:)` and `dequeue()` operations are required. If only `enqueue` is needed, using `Array.append` would outperform `enqueue` because `enqueue` involves individually allocating each node.
 ///
-/// > Benchmark: Deque is faster on removal tests than arrays when the number of elements is greater than 400.
+/// > Benchmark: `InlineDeque` is faster on removal tests than arrays on any significant size.
 ///
 /// - Tip: This structure is preferred compared to ``Deque`` when you know the capacity in advance while requiring the two-directional node.
 ///
@@ -21,23 +21,37 @@ public final class InlineDeque<Element> {
     
     /// The underlying buffer.
     @usableFromInline
+    @exclusivity(unchecked)
     internal let contents: UnsafeMutableBufferPointer<Node>
     
+    @exclusivity(unchecked)
+    @usableFromInline
+    var _count: Int = 0
     
     /// The number of elements in the queue.
     ///
     /// - Complexity: O(*0*), stored property.
-    public internal(set) var count: Int = 0
+    @inlinable
+    public var count: Int {
+        self._count
+    }
+    
     
     /// The endIndex of the buffer
-    private var stored: Int = 0
+    @exclusivity(unchecked)
+    @usableFromInline
+    var stored: Int = 0
     
     
     /// The first element stored
-    public var firstIndex: Index?
+    @exclusivity(unchecked)
+    @usableFromInline
+    var firstIndex: Index?
     
     /// The last element stored
-    public var lastIndex: Index?
+    @exclusivity(unchecked)
+    @usableFromInline
+    var lastIndex: Index?
     
     
     /// The first element stored
@@ -109,6 +123,7 @@ public final class InlineDeque<Element> {
     /// Append an element to the last.
     ///
     /// - Complexity: O(*1*)
+    @inlinable
     public func append(_ element: Element) {
         precondition(self.stored < self.contents.count, "append(_:) exceeds capacity")
         
@@ -123,17 +138,16 @@ public final class InlineDeque<Element> {
             lastIndex.pointee.next = pointer
             pointer.pointee.prev = lastIndex
             self.lastIndex = pointer
-        } else {
-            assertionFailure()
         }
         
         self.stored &+= 1
-        self.count &+= 1
+        self._count &+= 1
     }
     
     /// Append an element to the first.
     ///
     /// - Complexity: O(*1*)
+    @inlinable
     public func prepend(_ element: Element) {
         precondition(self.stored < self.contents.count, "prepend(_:) exceeds capacity")
         
@@ -148,12 +162,10 @@ public final class InlineDeque<Element> {
             firstIndex.pointee.prev = pointer
             pointer.pointee.next = firstIndex
             self.firstIndex = pointer
-        } else {
-            assertionFailure()
         }
         
         self.stored &+= 1
-        self.count &+= 1
+        self._count &+= 1
     }
     
     
@@ -162,6 +174,7 @@ public final class InlineDeque<Element> {
     /// On deque, the node is removed from the queue, along with the other nodes' links to it.
     ///
     /// - Complexity: O(*1*)
+    @inlinable
     public func removeFirst() -> Element? {
         guard let firstIndex else { return nil }
         let value = firstIndex.pointee.content
@@ -174,7 +187,7 @@ public final class InlineDeque<Element> {
             self.firstIndex?.pointee.prev = nil
         }
         
-        count &-= 1
+        _count &-= 1
         return value
     }
     
@@ -183,6 +196,7 @@ public final class InlineDeque<Element> {
     /// On deque, the node is removed from the queue, along with the other nodes' links to it.
     ///
     /// - Complexity: O(*1*)
+    @inlinable
     public func removeLast() -> Element? {
         guard let lastIndex else { return nil }
         let value = lastIndex.pointee.content
@@ -195,7 +209,7 @@ public final class InlineDeque<Element> {
             self.lastIndex?.pointee.next = nil
         }
         
-        count &-= 1
+        _count &-= 1
         return value
     }
     
@@ -207,6 +221,7 @@ public final class InlineDeque<Element> {
     ///
     /// - Complexity: O(*1*)
     @discardableResult
+    @inlinable
     public func remove(at index: Index) -> Element {
         let value = index.pointee.content
         
@@ -227,7 +242,7 @@ public final class InlineDeque<Element> {
             prev.pointee.next = next
         }
         
-        count &-= 1
+        _count &-= 1
         return value
     }
     
@@ -334,7 +349,7 @@ extension Array {
     @inlinable
     public init(_ deque: borrowing InlineDeque<Element>) {
         self = []
-        self.reserveCapacity(deque.count)
+        self.reserveCapacity(deque._count)
         
         deque.forEach { element in
             self.append(element)

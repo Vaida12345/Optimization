@@ -10,96 +10,118 @@
 ///
 /// A queue operates considerably faster than an `Array` when both `enqueue(_:)` and `dequeue()` operations are required. If only `enqueue` is needed, using `Array.append` would always outperform `enqueue`.
 ///
-/// > Benchmark: Deque is faster on `removeFirst` tests than arrays when the number of elements is greater than 200.
+/// > Benchmark: `RingBuffer` is faster on removal tests than arrays on any significant size.
 ///
 /// > Tip: This structure is preferred compared to ``Queue``.
 public final class RingBuffer<Element> {
     
     // MARK: - Storage
     
-    // Underlying storage, always a power-of-two length
-    private var buffer: UnsafeMutableBufferPointer<Element>
+    /// Underlying storage, always a power-of-two length
+    @usableFromInline
+    @exclusivity(unchecked)
+    var buffer: UnsafeMutableBufferPointer<Element>
     
-    // Index of the first (oldest) element
-    private var head: Int = 0
+    /// Index of the first (oldest) element
+    @usableFromInline
+    @exclusivity(unchecked)
+    var head: Int = 0
     
-    // Number of elements currently in the buffer
-    public private(set) var count: Int = 0
+    @exclusivity(unchecked)
+    @usableFromInline
+    var _count: Int = 0
     
+    /// Number of elements currently in the buffer
+    @inlinable
+    public var count: Int { _count }
+    
+    
+    @inlinable
     public var capacity: Int { buffer.count }
-    public var isEmpty: Bool { count == 0 }
-    public var isFull:  Bool { count == capacity }
+    @inlinable
+    public var isEmpty: Bool { _count == 0 }
+    @inlinable
+    public var isFull:  Bool { _count == capacity }
     
     
+    @inlinable
     public init(minimumCapacity: Int) {
         // round up to next power of two for cheap mod-masking
         let cap = RingBuffer.nextPowerOfTwo(minimumCapacity)
         buffer = .allocate(capacity: cap)
     }
     
+    @inlinable
     deinit {
         self.buffer.deallocate()
     }
     
     // MARK: - End-accessors
     
+    @inlinable
     public var first: Element? {
-        guard count > 0 else { return nil }
+        guard _count > 0 else { return nil }
         return buffer[head]
     }
     
+    @inlinable
     public var last: Element? {
-        guard count > 0 else { return nil }
-        let tailIndex = (head + count - 1) & (capacity - 1)
+        guard _count > 0 else { return nil }
+        let tailIndex = (head + _count - 1) & (capacity - 1)
         return buffer[tailIndex]
     }
     
     // MARK: - Enqueue / Dequeue
     
+    @inlinable
     public func append(_ element: Element) {
         if isFull { grow() }
-        let tailIndex = (head + count) & (capacity - 1)
+        let tailIndex = (head + _count) & (capacity - 1)
         buffer.initializeElement(at: tailIndex, to: element)
-        count += 1
+        _count += 1
     }
     
+    @inlinable
     public func prepend(_ element: Element) {
         if isFull { grow() }
         // move head backward one slot (mod capacity)
         head = (head &- 1) & (capacity - 1)
         buffer.initializeElement(at: head, to: element)
-        count += 1
+        _count += 1
     }
     
     @discardableResult
+    @inlinable
     public func removeFirst() -> Element? {
-        guard count > 0 else { return nil }
+        guard _count > 0 else { return nil }
         let e = buffer[head]
         buffer.deinitializeElement(at: head)
         // advance head
         head = (head &+ 1) & (capacity - 1)
-        count -= 1
+        _count -= 1
         return e
     }
     
     @discardableResult
+    @inlinable
     public func removeLast() -> Element? {
-        guard count > 0 else { return nil }
-        let tailIndex = (head + count - 1) & (capacity - 1)
+        guard _count > 0 else { return nil }
+        let tailIndex = (head + _count - 1) & (capacity - 1)
         let e = buffer[tailIndex]
         buffer.deinitializeElement(at: tailIndex)
-        count -= 1
+        _count -= 1
         return e
     }
     
     /// Iterate through all stored elements, in FIFO order.
     ///
     /// - Parameter block: a closure to call on each element
+    @inlinable
     public func forEach<E: Error>(
         _ block: (_ element: Element) throws(E) -> Void
     ) throws(E) {
         var i = 0
-        while i < count {
+        while i < _count {
             // wrap (head+i) back into [0..<capacity)
             let physicalIndex = (head &+ i) & (capacity - 1)
             // we know every slot in [head, head+count) is non‐nil
@@ -112,14 +134,15 @@ public final class RingBuffer<Element> {
     
     // MARK: - Internal resize
     
-    private func grow() {
+    @inlinable
+    func grow() {
         let oldCap = capacity
         let newCap = oldCap << 1
         let newBuf = UnsafeMutableBufferPointer<Element>.allocate(capacity: newCap)
         // copy old elements in logical order
         
         var i = 0
-        while i < count {
+        while i < _count {
             newBuf.initializeElement(at: i, to: buffer[(head + i) & (oldCap - 1)])
             
             i &+= 1
@@ -131,7 +154,8 @@ public final class RingBuffer<Element> {
     }
     
     // round up to a power of two
-    private static func nextPowerOfTwo(_ n: Int) -> Int {
+    @inlinable
+    static func nextPowerOfTwo(_ n: Int) -> Int {
         var x = 1
         while x < n { x <<= 1 }
         return x
@@ -141,12 +165,13 @@ public final class RingBuffer<Element> {
 
 extension RingBuffer {
     
+    @inlinable
     public convenience init(_ collection: some Collection<Element>) {
         let count = collection.count
         self.init(minimumCapacity: count)
         
         _ = self.buffer.initialize(fromContentsOf: collection)
-        self.count = count
+        self._count = count
         self.head = 0
     }
     
@@ -205,7 +230,7 @@ extension Array {
     @inlinable
     public init(_ ring: borrowing RingBuffer<Element>) {
         self = []
-        self.reserveCapacity(ring.count)
+        self.reserveCapacity(ring._count)
         
         ring.forEach { element in
             self.append(element)

@@ -8,13 +8,18 @@
 import Testing
 @testable
 import Optimization
+import os
 
 
 @Suite
 struct InlineDequeTests {
     
     @Test func testEmpty() {
-        let deque = InlineDeque<Int>()
+        let signpost = OSSignposter(subsystem: "Allocation", category: .pointsOfInterest)
+        let deque = signpost.withIntervalSignpost("init(_:)") {
+            InlineDeque<Int>()
+        }
+        
         #expect(deque.firstIndex == nil)
         #expect(deque.lastIndex == nil)
         #expect(deque.isEmpty)
@@ -153,5 +158,13 @@ struct InlineDequeTests {
         // original deque preserved
         #expect(deque.count == 3)
         #expect(deque.first == 100 && deque.last == 300)
+    }
+    
+    @Test func largeAppend() {
+        let signpost = OSSignposter(subsystem: "InlineDeque", category: .pointsOfInterest)
+        let sequence = Array(1...1000_000)
+        let _ = signpost.withIntervalSignpost("Append 1M") {
+            InlineDeque(sequence)
+        }
     }
 }
