@@ -43,27 +43,33 @@ public final class InlineDeque<Element> {
     var stored: Int = 0
     
     
-    /// The first element stored
     @exclusivity(unchecked)
     @usableFromInline
-    var firstIndex: Index?
+    var _firstIndex: Index?
+    
+    @exclusivity(unchecked)
+    @usableFromInline
+    var _lastIndex: Index?
+    
+    /// The first element stored
+    @inlinable
+    public var firstIndex: Index? { _firstIndex }
     
     /// The last element stored
-    @exclusivity(unchecked)
-    @usableFromInline
-    var lastIndex: Index?
+    @inlinable
+    public var lastIndex: Index? { _lastIndex }
     
     
     /// The first element stored
     @inlinable
     public var first: Element? {
-        self.firstIndex.map({ self[$0] })
+        self._firstIndex.map({ self[$0] })
     }
     
     /// The last element stored
     @inlinable
     public var last: Element? {
-        self.lastIndex.map({ self[$0] })
+        self._lastIndex.map({ self[$0] })
     }
     
     
@@ -107,7 +113,7 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     @inlinable
     public var isEmpty: Bool {
-        firstIndex == nil
+        _firstIndex == nil
     }
     
     @inlinable
@@ -131,13 +137,13 @@ public final class InlineDeque<Element> {
         let pointer = self.contents.baseAddress! + self.stored
         pointer.initialize(to: node)
         
-        if firstIndex == nil {
-            self.firstIndex = pointer
-            self.lastIndex = pointer
-        } else if let lastIndex {
-            lastIndex.pointee.next = pointer
-            pointer.pointee.prev = lastIndex
-            self.lastIndex = pointer
+        if _firstIndex == nil {
+            self._firstIndex = pointer
+            self._lastIndex = pointer
+        } else if let _lastIndex {
+            _lastIndex.pointee.next = pointer
+            pointer.pointee.prev = _lastIndex
+            self._lastIndex = pointer
         }
         
         self.stored &+= 1
@@ -155,13 +161,13 @@ public final class InlineDeque<Element> {
         let pointer = self.contents.baseAddress! + self.stored
         pointer.initialize(to: node)
         
-        if lastIndex == nil {
-            self.firstIndex = pointer
-            self.lastIndex = pointer
-        } else if let firstIndex {
-            firstIndex.pointee.prev = pointer
-            pointer.pointee.next = firstIndex
-            self.firstIndex = pointer
+        if _lastIndex == nil {
+            self._firstIndex = pointer
+            self._lastIndex = pointer
+        } else if let _firstIndex {
+            _firstIndex.pointee.prev = pointer
+            pointer.pointee.next = _firstIndex
+            self._firstIndex = pointer
         }
         
         self.stored &+= 1
@@ -176,15 +182,15 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     @inlinable
     public func removeFirst() -> Element? {
-        guard let firstIndex else { return nil }
-        let value = firstIndex.pointee.content
+        guard let _firstIndex else { return nil }
+        let value = _firstIndex.pointee.content
         
-        if self.lastIndex == firstIndex {
-            self.firstIndex = nil
-            self.lastIndex = nil
+        if self._lastIndex == _firstIndex {
+            self._firstIndex = nil
+            self._lastIndex = nil
         } else {
-            self.firstIndex = firstIndex.pointee.next
-            self.firstIndex?.pointee.prev = nil
+            self._firstIndex = _firstIndex.pointee.next
+            self._firstIndex?.pointee.prev = nil
         }
         
         _count &-= 1
@@ -198,15 +204,15 @@ public final class InlineDeque<Element> {
     /// - Complexity: O(*1*)
     @inlinable
     public func removeLast() -> Element? {
-        guard let lastIndex else { return nil }
-        let value = lastIndex.pointee.content
+        guard let _lastIndex else { return nil }
+        let value = _lastIndex.pointee.content
         
-        if self.firstIndex == lastIndex {
-            self.firstIndex = nil
-            self.lastIndex = nil
+        if self._firstIndex == _lastIndex {
+            self._firstIndex = nil
+            self._lastIndex = nil
         } else {
-            self.lastIndex = lastIndex.pointee.prev
-            self.lastIndex?.pointee.next = nil
+            self._lastIndex = _lastIndex.pointee.prev
+            self._lastIndex?.pointee.next = nil
         }
         
         _count &-= 1
@@ -226,16 +232,16 @@ public final class InlineDeque<Element> {
         let value = index.pointee.content
         
         // fetch the new node
-        if self.firstIndex == self.lastIndex {
-            assert(index == firstIndex)
-            self.firstIndex = nil
-            self.lastIndex = nil
-        } else if firstIndex == index {
-            self.firstIndex = firstIndex?.pointee.next
-            self.firstIndex?.pointee.prev = nil
-        } else if lastIndex == index {
-            self.lastIndex = lastIndex?.pointee.prev
-            self.lastIndex?.pointee.next = nil
+        if self._firstIndex == self._lastIndex {
+            assert(index == _firstIndex)
+            self._firstIndex = nil
+            self._lastIndex = nil
+        } else if _firstIndex == index {
+            self._firstIndex = _firstIndex?.pointee.next
+            self._firstIndex?.pointee.prev = nil
+        } else if _lastIndex == index {
+            self._lastIndex = _lastIndex?.pointee.prev
+            self._lastIndex?.pointee.next = nil
         } else if let prev = index.pointee.prev,
                   let next = index.pointee.next {
             next.pointee.prev = prev
@@ -275,7 +281,7 @@ public final class InlineDeque<Element> {
     /// Iterate through the deque without removing any of its elements.
     @inlinable
     public func forEach<E: Error>(_ block: (_ element: Element) throws(E) -> Void) throws(E) {
-        var current: Index? = self.firstIndex
+        var current: Index? = self._firstIndex
         
         while let node = current {
             try block(self[node])
