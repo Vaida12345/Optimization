@@ -11,23 +11,26 @@
 ///
 /// A `Heap` is both an iterator and a sequence. When forming such iterator, a copy of the heap is made, ensuring the original copy is intact during iteration.
 ///
-/// > Benchmark: Deque is faster on sorting tests than arrays when the number of elements is greater than 100.
+/// > Benchmark: `Heap` is faster on sorting tests compared to arrays when the number of elements is greater than 50.
 public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable {
-    
-    private var contents: [Element]
-    
     
     // MARK: - Basic Properties
     
-    private var heapType: HeapType
+    @usableFromInline
+    internal var contents: [Element]
+    
+    @usableFromInline
+    internal var heapType: HeapType
     
     
     // MARK: - Instance Properties
     
+    @inlinable
     public var count: Int {
         self.contents.count
     }
     
+    @inlinable
     public var isEmpty: Bool {
         self.contents.isEmpty
     }
@@ -38,7 +41,8 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// Up-heap, used in adding elements.
     ///
     /// - Complexity: O(log *n*), where *n*: length of heap
-    private mutating func upHeap(at index: Int) {
+    @inlinable
+    mutating func upHeap(at index: Int) {
         
         var index = index
         var parentIndex = Heap.parentIndex(of: index)
@@ -53,7 +57,8 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// Fixing the heap after deleting an element.
     ///
     /// - Complexity: O(log *n*), where *n*: length of heap
-    private mutating func downHeap(at index: Int) {
+    @inlinable
+    mutating func downHeap(at index: Int) {
         let leftChildIndex = Heap.leftChildIndex(of: index)
         let rightChildIndex = leftChildIndex + 1
         var maxIndex = index
@@ -67,14 +72,16 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
         self.downHeap(at: maxIndex)
     }
     
-    private func isInOrder(_ lhs: Element, _ rhs: Element) -> Bool {
+    @inlinable
+    func isInOrder(_ lhs: Element, _ rhs: Element) -> Bool {
         heapType == .maxHeap ? lhs > rhs : lhs < rhs
     }
     
     /// Restore heap property
     ///
     /// - Complexity: O(*n* log *n*), where *n*: the array length
-    private mutating func heapify() {
+    @inlinable
+    mutating func heapify() {
         for i in stride(from: self.contents.count / 2 - 1, through: 0, by: -1) {
             downHeap(at: i) // Join the freshly-verified sub-heap with its parent, Verify the heap condition for this larger sub-heap
         }
@@ -86,6 +93,7 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// Add an element to its correct location.
     ///
     /// - Complexity: O(log *n*), where *n*: length of heap
+    @inlinable
     public mutating func append(_ element: Element) {
         self.contents.append(element)
         self.upHeap(at: self.count - 1)
@@ -95,12 +103,14 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// Add an element to its correct location.
     ///
     /// - Complexity: O(*n* log *n*), where *n*: length of resulting heap.
+    @inlinable
     public mutating func append(contentsOf sequence: some Sequence<Element>) {
         self.contents.append(contentsOf: sequence)
         self.heapify()
     }
     
     /// Access the first element without modifying the heap.
+    @inlinable
     public var first: Element? {
         self.contents.first
     }
@@ -108,6 +118,7 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// Dequeues the first element.
     ///
     /// - Complexity: O(log *n*), where *n*: length of heap
+    @inlinable
     @discardableResult
     public mutating func removeFirst() -> Element? {
         guard !self.isEmpty else { return nil }
@@ -127,6 +138,7 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// The root of the heap.
     ///
     /// - Complexity: O(*0*)
+    @inlinable
     public func peak() -> Element? {
         self.contents.first
     }
@@ -135,6 +147,7 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     // MARK: - Designated Initializers
     
     /// Initialize with the type. (ie, `maxHeap` or `minHeap`)
+    @inlinable
     public init(_ type: HeapType = .maxHeap) {
         self.contents = []
         self.heapType = type
@@ -145,7 +158,8 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     
     /// Initialize using Bottom-Up Heap Construction
     ///
-    /// - Complexity: O(*n*), where *n*: the array length
+    /// - Complexity: O(*n* log *n*), where *n*: the array length
+    @inlinable
     public init(_ type: HeapType = .maxHeap, from array: [Element]) {
         self.init(type)
         self.contents = array
@@ -154,6 +168,7 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     }
     
     /// Create an instance given the array literal of element.
+    @inlinable
     public init(arrayLiteral elements: Element...) {
         self.init(from: elements)
     }
@@ -161,11 +176,13 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     
     // MARK: - Type Methods
     
-    private static func parentIndex(of index: Int) -> Int {
+    @inlinable
+    static func parentIndex(of index: Int) -> Int {
         (index - 1) / 2
     }
     
-    private static func leftChildIndex(of index: Int) -> Int {
+    @inlinable
+    static func leftChildIndex(of index: Int) -> Int {
         2 * index + 1
     }
     
@@ -218,6 +235,7 @@ extension Heap: IteratorProtocol {
 
 extension Heap: CustomStringConvertible {
     
+    @inlinable
     public var description: String {
         "[" + self.map({ "\($0)" }).joined(separator: ", ") + "]"
     }
@@ -242,6 +260,7 @@ public extension Sequence {
     /// > Returns:
     /// > - `nil` if `self` is empty
     /// > - `max()` if `k > self.count`.
+    @inlinable
     func min(k: Int) -> Element? where Element: Comparable {
         var heap = Heap<Element>(.maxHeap)
         
