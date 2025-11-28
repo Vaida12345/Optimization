@@ -14,33 +14,37 @@
 /// A `PriorityQueue` is both an iterator and a sequence. When forming such iterator, a copy of the queue is made, ensuring the original copy is intact during iteration.
 public struct PriorityQueue<Element, W> where W: Comparable {
     
-    private var contents: Heap<Node>
+    @usableFromInline
+    internal var contents: Heap<Node>
     
-    fileprivate struct Node: Comparable {
+    public struct Node: Comparable {
         
-        fileprivate var content: Element
-        fileprivate var weight: W
+        public fileprivate(set) var content: Element
+        public fileprivate(set) var weight: W
         
-        fileprivate init(_ content: Element, weight: W) {
+        @usableFromInline
+        internal init(_ content: Element, weight: W) {
             self.content = content
             self.weight = weight
         }
         
-        fileprivate static func < (lhs: PriorityQueue<Element, W>.Node, rhs: PriorityQueue<Element, W>.Node) -> Bool {
+        public static func < (lhs: PriorityQueue<Element, W>.Node, rhs: PriorityQueue<Element, W>.Node) -> Bool {
             lhs.weight < rhs.weight
         }
         
-        fileprivate static func == (lhs: PriorityQueue<Element, W>.Node, rhs: PriorityQueue<Element, W>.Node) -> Bool {
+        public static func == (lhs: PriorityQueue<Element, W>.Node, rhs: PriorityQueue<Element, W>.Node) -> Bool {
             lhs.weight == rhs.weight
         }
     }
     
     /// The number of elements in the queue.
+    @inlinable
     public var count: Int {
         self.contents.count
     }
     
     /// Returns whether the queue is empty.
+    @inlinable
     public var isEmpty: Bool {
         self.contents.isEmpty
     }
@@ -49,6 +53,7 @@ public struct PriorityQueue<Element, W> where W: Comparable {
     ///
     /// - Parameters:
     ///   - order: The order determining how the elements will be sorted.
+    @inlinable
     public init(_ order: WeightOrder = .descending) {
         self.contents = .init(order == .descending ? .maxHeap : .minHeap)
     }
@@ -56,6 +61,7 @@ public struct PriorityQueue<Element, W> where W: Comparable {
     /// Up-heap
     ///
     /// - Complexity: O(log *n*), where *n*: length of heap
+    @inlinable
     public mutating func enqueue(_ content: Element, weight: W) {
         let node = Node(content, weight: weight)
         self.contents.append(node)
@@ -80,6 +86,7 @@ public struct PriorityQueue<Element, W> where W: Comparable {
     /// Dequeue the element of priority.
     ///
     /// - Complexity: O(log *n*), where *n*: length of heap
+    @inlinable
     public mutating func dequeue() -> Element? {
         self.contents.removeFirst()?.content
     }
@@ -90,10 +97,24 @@ public struct PriorityQueue<Element, W> where W: Comparable {
     ///   - weight: Pass a value if you need to know the weight. Otherwise, use ``dequeue()`` instead.
     ///
     /// - Complexity: O(log *n*), where *n*: length of heap
+    @inlinable
     public mutating func dequeue(weight: inout W) -> Element? {
         guard let value = self.contents.removeFirst() else { return nil }
         weight = value.weight
         return value.content
+    }
+    
+    @inlinable
+    public mutating func removeAll() {
+        self.contents.removeAll()
+    }
+    
+    /// The root of the heap.
+    ///
+    /// - Complexity: O(*0*)
+    @inlinable
+    public func peak() -> Node? {
+        self.contents.peak()
     }
     
     /// The order for sorting by the weight.
@@ -126,6 +147,7 @@ extension PriorityQueue: Sendable where Element: Sendable, W: Sendable { }
 
 extension PriorityQueue: CustomStringConvertible {
     
+    @inlinable
     public var description: String {
         "[" + self.map({ "\($0)" }).joined(separator: ", ") + "]"
     }
@@ -134,6 +156,7 @@ extension PriorityQueue: CustomStringConvertible {
 
 extension PriorityQueue: CustomDebugStringConvertible {
     
+    @inlinable
     public var debugDescription: String {
         "[" + self.contents.map({ "\($0.content)<\($0.weight)>" }).joined(separator: ", ") + "]"
     }

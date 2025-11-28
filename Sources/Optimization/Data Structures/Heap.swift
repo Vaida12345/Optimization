@@ -143,6 +143,10 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
         self.contents.first
     }
     
+    public mutating func removeAll() {
+        self.contents.removeAll()
+    }
+    
     
     // MARK: - Designated Initializers
     
