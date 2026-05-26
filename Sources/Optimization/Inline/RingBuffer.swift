@@ -26,6 +26,11 @@ public final class RingBuffer<Element> {
     @usableFromInline
     @exclusivity(unchecked)
     var head: Int = 0
+
+    /// Index of the last (newest) element
+    @usableFromInline
+    @exclusivity(unchecked)
+    var tail: Int = 0
     
     @exclusivity(unchecked)
     @usableFromInline
@@ -49,10 +54,18 @@ public final class RingBuffer<Element> {
         // round up to next power of two for cheap mod-masking
         let cap = RingBuffer.nextPowerOfTwo(minimumCapacity)
         buffer = .allocate(capacity: cap)
+        tail = (head &- 1) & (cap &- 1)
     }
     
     @inlinable
     deinit {
+        // deinitialize each active element
+        var i = 0
+        while i < _count {
+            let physicalIndex = (head &+ i) & (capacity - 1)
+            buffer.deinitializeElement(at: physicalIndex)
+            i &+= 1
+        }
         self.buffer.deallocate()
     }
     
@@ -67,8 +80,7 @@ public final class RingBuffer<Element> {
     @inlinable
     public var last: Element? {
         guard _count > 0 else { return nil }
-        let tailIndex = (head + _count - 1) & (capacity - 1)
-        return buffer[tailIndex]
+        return buffer[tail]
     }
     
     // MARK: - Enqueue / Dequeue
@@ -76,8 +88,8 @@ public final class RingBuffer<Element> {
     @inlinable
     public func append(_ element: Element) {
         if isFull { grow() }
-        let tailIndex = (head + _count) & (capacity - 1)
-        buffer.initializeElement(at: tailIndex, to: element)
+        tail = (tail &+ 1) & (capacity - 1)
+        buffer.initializeElement(at: tail, to: element)
         _count += 1
     }
     
@@ -106,9 +118,9 @@ public final class RingBuffer<Element> {
     @inlinable
     public func removeLast() -> Element? {
         guard _count > 0 else { return nil }
-        let tailIndex = (head + _count - 1) & (capacity - 1)
-        let e = buffer[tailIndex]
-        buffer.deinitializeElement(at: tailIndex)
+        let e = buffer[tail]
+        buffer.deinitializeElement(at: tail)
+        tail = (tail &- 1) & (capacity - 1)
         _count -= 1
         return e
     }
@@ -139,18 +151,19 @@ public final class RingBuffer<Element> {
         let oldCap = capacity
         let newCap = oldCap << 1
         let newBuf = UnsafeMutableBufferPointer<Element>.allocate(capacity: newCap)
-        // copy old elements in logical order
-        
+
         var i = 0
         while i < _count {
-            newBuf.initializeElement(at: i, to: buffer[(head + i) & (oldCap - 1)])
-            
+            let physicalIndex = (head &+ i) & (oldCap - 1)
+            newBuf.initializeElement(at: i, to: buffer[physicalIndex])
+            buffer.deinitializeElement(at: physicalIndex)
             i &+= 1
         }
         buffer.deallocate()
-        
+
         buffer = newBuf
         head = 0
+        tail = _count &- 1
     }
     
     // round up to a power of two
@@ -169,10 +182,12 @@ extension RingBuffer {
     public convenience init(_ collection: some Collection<Element>) {
         let count = collection.count
         self.init(minimumCapacity: count)
-        
+
+        guard count > 0 else { return }
         _ = self.buffer.initialize(fromContentsOf: collection)
         self._count = count
         self.head = 0
+        self.tail = count &- 1
     }
     
 }

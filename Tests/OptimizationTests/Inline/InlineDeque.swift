@@ -167,4 +167,80 @@ struct InlineDequeTests {
             InlineDeque(sequence)
         }
     }
+
+    @Test func testUpdate() {
+        let deque = InlineDeque([10, 20, 30])
+        guard let first = deque.firstIndex else { return }
+        deque.update(at: first) { $0 += 5 }
+        #expect(deque.first == 15)
+    }
+
+    @Test func testSubscriptSetter() {
+        let deque = InlineDeque([1, 2, 3])
+        guard let middle = deque.firstIndex?.pointee.next else { return }
+        deque[middle] = 99
+        #expect(deque[middle] == 99)
+        #expect(deque.first == 1)
+        #expect(deque.last == 3)
+    }
+
+    @Test func testIndexNavigation() {
+        let deque = InlineDeque([1, 2, 3])
+        guard let first = deque.firstIndex else { return }
+
+        let second = deque.index(after: first)
+        #expect(second != nil)
+        #expect(deque[second!] == 2)
+
+        let beforeSecond = deque.index(before: second!)
+        #expect(beforeSecond == first)
+    }
+
+    @Test func testStringElements() {
+        let deque = InlineDeque(["alice", "bob", "charlie"])
+        #expect(deque.first == "alice")
+        #expect(deque.last == "charlie")
+        #expect(deque.removeFirst() == "alice")
+        #expect(deque.removeLast() == "charlie")
+        #expect(deque.first == "bob")
+        #expect(deque.removeFirst() == "bob")
+        #expect(deque.isEmpty)
+    }
+
+    @Test func testLargeDequeDeinit() {
+        // exercises deinit walking the list and deinitializing each node
+        let deque = InlineDeque(Array(0..<100_000))
+        #expect(deque.count == 100_000)
+        #expect(deque.first == 0)
+        #expect(deque.last == 99_999)
+    }
+
+    @Test func testRemoveAllThenCheckEmpty() {
+        let deque = InlineDeque([1, 2, 3])
+        _ = deque.removeFirst()
+        _ = deque.removeFirst()
+        _ = deque.removeFirst()
+        #expect(deque.isEmpty)
+        #expect(deque.count == 0)
+        #expect(deque.first == nil)
+        #expect(deque.last == nil)
+        #expect(deque.firstIndex == nil)
+        #expect(deque.lastIndex == nil)
+    }
+
+    @Test func testRemoveAtClearsPointers() {
+        let deque = InlineDeque([1, 2, 3, 4])
+        guard let second = deque.firstIndex?.pointee.next else { return }
+
+        // capture neighbors before removal
+        let prev = second.pointee.prev
+        let next = second.pointee.next
+
+        deque.remove(at: second)
+
+        // neighbors should now point to each other
+        #expect(prev?.pointee.next == next)
+        #expect(next?.pointee.prev == prev)
+        #expect(deque.count == 3)
+    }
 }

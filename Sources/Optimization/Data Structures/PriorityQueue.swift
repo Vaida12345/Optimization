@@ -12,6 +12,8 @@
 /// The type `Element` is the content, `W` is the type for weight.
 ///
 /// A `PriorityQueue` is both an iterator and a sequence. When forming such iterator, a copy of the queue is made, ensuring the original copy is intact during iteration.
+///
+/// - Warning: `PriorityQueue`s are not stable, and does not guarantee FIFO.
 public struct PriorityQueue<Element, W> where W: Comparable {
     
     @usableFromInline
@@ -113,15 +115,15 @@ public struct PriorityQueue<Element, W> where W: Comparable {
     ///
     /// - Complexity: O(*0*)
     @inlinable
-    public func peak() -> Node? {
-        self.contents.peak()
+    public func peek() -> Node? {
+        self.contents.peek()
     }
     
     /// The order for sorting by the weight.
     public enum WeightOrder: Equatable, Sendable {
-        /// elements with higher weight will be dequeued first.
-        case ascending
         /// elements with lower weight will be dequeued first.
+        case ascending
+        /// elements with higher weight will be dequeued first.
         case descending
     }
 }

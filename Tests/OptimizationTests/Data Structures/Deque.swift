@@ -156,4 +156,51 @@ struct DequeTests {
         #expect(deque.count == 3)
         #expect(deque.first == 100 && deque.last == 300)
     }
+
+    @Test func testRemoveOnlyElement() {
+        let deque = Deque([42])
+        #expect(deque.count == 1)
+        let removed = deque.remove(deque.front!)
+        #expect(removed == 42)
+        #expect(deque.isEmpty)
+        #expect(deque.front == nil)
+        #expect(deque.back == nil)
+    }
+
+    @Test func testStringElements() {
+        let deque = Deque(["hello", "world"])
+        #expect(deque.first == "hello")
+        #expect(deque.last == "world")
+        #expect(deque.removeFirst() == "hello")
+        #expect(deque.removeLast() == "world")
+        #expect(deque.isEmpty)
+    }
+
+    @Test func testInterleavedPrependAndRemoveLast() {
+        let deque = Deque<Int>()
+        deque.prepend(1)
+        deque.prepend(0)
+        deque.append(2)
+        // [0, 1, 2]
+        #expect(deque.removeLast() == 2)
+        #expect(deque.removeFirst() == 0)
+        #expect(deque.removeFirst() == 1)
+        #expect(deque.isEmpty)
+    }
+
+    @Test func testLargeDequeDeinit() {
+        // exercises iterative deinit — must not stack overflow
+        let deque = Deque(0..<100_000)
+        #expect(deque.count == 100_000)
+        #expect(deque.first == 0)
+        #expect(deque.last == 99_999)
+    }
+
+    @Test func testRemoveCleansNodeLinks() {
+        let deque = Deque([1, 2, 3])
+        let middle = deque.front!.next!
+        deque.remove(middle)
+        #expect(middle.prev == nil)
+        #expect(middle.next == nil)
+    }
 }

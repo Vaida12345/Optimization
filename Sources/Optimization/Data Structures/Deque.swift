@@ -81,6 +81,13 @@ public final class Deque<Element> {
         self.back = nil
         self.count = 0
     }
+
+    deinit {
+        while let node = front {
+            front = node.next
+            node.next = nil
+        }
+    }
     
     @inlinable
     public convenience init(_ sequence: some Sequence<Element>) {
@@ -194,7 +201,7 @@ public final class Deque<Element> {
     /// - Complexity: O(*1*)
     @discardableResult
     public func remove(_ node: Node) -> Element {
-        if self.front === back {
+        if self.front === node && self.back === node {
             self.front = nil
             self.back = nil
         } else if node === self.front {

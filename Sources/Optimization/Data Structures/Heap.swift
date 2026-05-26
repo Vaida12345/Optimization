@@ -43,15 +43,16 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// - Complexity: O(log *n*), where *n*: length of heap
     @inlinable
     mutating func upHeap(at index: Int) {
-        
         var index = index
+        let value = self.contents[index]
         var parentIndex = Heap.parentIndex(of: index)
-        
-        while index > 0 && isInOrder(self.contents[index], self.contents[parentIndex]) { // Compare priority of current child and its parent
-            self.contents.swapAt(index, parentIndex) // If the child's position is incorrect, swap it with its parent
+
+        while index > 0 && isInOrder(value, self.contents[parentIndex]) {
+            self.contents[index] = self.contents[parentIndex] // shift parent down
             index = parentIndex
             parentIndex = Heap.parentIndex(of: index)
         }
+        self.contents[index] = value
     }
     
     /// Fixing the heap after deleting an element.
@@ -59,17 +60,24 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     /// - Complexity: O(log *n*), where *n*: length of heap
     @inlinable
     mutating func downHeap(at index: Int) {
-        let leftChildIndex = Heap.leftChildIndex(of: index)
-        let rightChildIndex = leftChildIndex + 1
-        var maxIndex = index
-        
-        if leftChildIndex < self.count && isInOrder(self.contents[leftChildIndex], self.contents[maxIndex]) { maxIndex = leftChildIndex } // Compare priority of current parent and its children
-        if rightChildIndex < self.count && isInOrder(self.contents[rightChildIndex], self.contents[maxIndex]) { maxIndex = rightChildIndex }
-        
-        guard maxIndex != index else { return }
-           
-        contents.swapAt(index, maxIndex) // If the parent's position is incorrect, swap it with the highest-priority child
-        self.downHeap(at: maxIndex)
+        var index = index
+        let value = self.contents[index]
+        let count = self.count
+
+        while true {
+            let leftChildIndex = Heap.leftChildIndex(of: index)
+            let rightChildIndex = leftChildIndex + 1
+            guard leftChildIndex < count else { break }
+
+            var maxIndex = leftChildIndex
+            if rightChildIndex < count && isInOrder(self.contents[rightChildIndex], self.contents[leftChildIndex]) { maxIndex = rightChildIndex }
+
+            guard isInOrder(self.contents[maxIndex], value) else { break }
+
+            self.contents[index] = self.contents[maxIndex] // shift child up
+            index = maxIndex
+        }
+        self.contents[index] = value
     }
     
     @inlinable
@@ -139,7 +147,7 @@ public struct Heap<Element>: ExpressibleByArrayLiteral where Element: Comparable
     ///
     /// - Complexity: O(*0*)
     @inlinable
-    public func peak() -> Element? {
+    public func peek() -> Element? {
         self.contents.first
     }
     
@@ -275,7 +283,7 @@ public extension Sequence {
             }
         }
         
-        return heap.peak() // Root of the max-heap is the k-th smallest.
+        return heap.peek() // Root of the max-heap is the k-th smallest.
     }
     
     /// Returns the `k`th maximum value.
@@ -297,7 +305,7 @@ public extension Sequence {
             if heap.count > k { heap.removeFirst() }
         }
         
-        return heap.peak()
+        return heap.peek()
     }
     
 }

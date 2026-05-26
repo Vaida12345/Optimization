@@ -45,6 +45,13 @@ public final class Queue<Element> {
         self.back = nil
         self.count = 0
     }
+
+    deinit {
+        while let node = front {
+            front = node.next
+            node.next = nil
+        }
+    }
     
     public convenience init(_ sequence: some Sequence<Element>) {
         self.init()

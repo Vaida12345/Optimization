@@ -16,7 +16,7 @@
 ///
 /// - Tip: This structure is preferred compared to ``Deque`` when you know the capacity in advance while requiring the two-directional node.
 ///
-/// - Note: When an element is removed, its reference is removed, but not the allocation. The allocation for all elements is removed on `deinit`.
+/// - Note: When an element is removed, its node is deinitialized. The buffer allocation is freed on `deinit`.
 public final class InlineDeque<Element> {
     
     /// The underlying buffer.
@@ -80,6 +80,12 @@ public final class InlineDeque<Element> {
     
     @inlinable
     deinit {
+        var current = _firstIndex
+        while let node = current {
+            let next = node.pointee.next
+            node.deinitialize(count: 1)
+            current = next
+        }
         self.contents.deallocate()
     }
     
@@ -184,7 +190,7 @@ public final class InlineDeque<Element> {
     public func removeFirst() -> Element? {
         guard let _firstIndex else { return nil }
         let value = _firstIndex.pointee.content
-        
+
         if self._lastIndex == _firstIndex {
             self._firstIndex = nil
             self._lastIndex = nil
@@ -192,7 +198,8 @@ public final class InlineDeque<Element> {
             self._firstIndex = _firstIndex.pointee.next
             self._firstIndex?.pointee.prev = nil
         }
-        
+
+        _firstIndex.deinitialize(count: 1)
         _count &-= 1
         return value
     }
@@ -206,7 +213,7 @@ public final class InlineDeque<Element> {
     public func removeLast() -> Element? {
         guard let _lastIndex else { return nil }
         let value = _lastIndex.pointee.content
-        
+
         if self._firstIndex == _lastIndex {
             self._firstIndex = nil
             self._lastIndex = nil
@@ -214,7 +221,8 @@ public final class InlineDeque<Element> {
             self._lastIndex = _lastIndex.pointee.prev
             self._lastIndex?.pointee.next = nil
         }
-        
+
+        _lastIndex.deinitialize(count: 1)
         _count &-= 1
         return value
     }
@@ -230,8 +238,7 @@ public final class InlineDeque<Element> {
     @inlinable
     public func remove(at index: Index) -> Element {
         let value = index.pointee.content
-        
-        // fetch the new node
+
         if self._firstIndex == self._lastIndex {
             assert(index == _firstIndex)
             self._firstIndex = nil
@@ -246,8 +253,11 @@ public final class InlineDeque<Element> {
                   let next = index.pointee.next {
             next.pointee.prev = prev
             prev.pointee.next = next
+        } else {
+            fatalError("Index is not part of this deque")
         }
-        
+
+        index.deinitialize(count: 1)
         _count &-= 1
         return value
     }
