@@ -10,6 +10,20 @@ import Testing
 import Optimization
 
 
+final class PQTestObject: Equatable, CustomStringConvertible {
+    let id: Int
+    let name: String
+
+    init(id: Int, name: String = "") {
+        self.id = id
+        self.name = name
+    }
+
+    static func == (lhs: PQTestObject, rhs: PQTestObject) -> Bool { lhs.id == rhs.id }
+    var description: String { "Obj(\(id), \(name))" }
+}
+
+
 @Suite
 struct PriorityQueueTests {
     
@@ -126,5 +140,68 @@ struct PriorityQueueTests {
         #expect(queue.dequeue() == "mango")
         #expect(queue.dequeue() == "apple")
     }
-    
+
+    @Test
+    func classPayloadEnqueueDequeue() {
+        var queue = PriorityQueue<PQTestObject, Int>(.ascending)
+        let obj1 = PQTestObject(id: 1, name: "one")
+        let obj2 = PQTestObject(id: 2, name: "two")
+        let obj3 = PQTestObject(id: 3, name: "three")
+
+        queue.enqueue(obj1, weight: 30)
+        queue.enqueue(obj2, weight: 10)
+        queue.enqueue(obj3, weight: 20)
+
+        #expect(queue.count == 3)
+        #expect(queue.dequeue()?.id == 2) // weight 10
+        #expect(queue.dequeue()?.id == 3) // weight 20
+        #expect(queue.dequeue()?.id == 1) // weight 30
+        #expect(queue.dequeue() == nil)
+    }
+
+    @Test
+    func classPayloadReferenceIdentity() {
+        var queue = PriorityQueue<PQTestObject, Int>(.descending)
+        let obj = PQTestObject(id: 99, name: "test")
+        queue.enqueue(obj, weight: 100)
+
+        let peeked = queue.peek()
+        #expect(peeked?.content === obj)
+        #expect(peeked?.content.id == 99)
+        #expect(queue.count == 1)
+    }
+
+    @Test
+    func classPayloadSameWeight() {
+        var queue = PriorityQueue<PQTestObject, Int>(.descending)
+        let obj1 = PQTestObject(id: 1)
+        let obj2 = PQTestObject(id: 2)
+        let obj3 = PQTestObject(id: 3)
+
+        queue.enqueue(obj1, weight: 5)
+        queue.enqueue(obj2, weight: 5)
+        queue.enqueue(obj3, weight: 5)
+
+        let results = [queue.dequeue(), queue.dequeue(), queue.dequeue()].compactMap { $0?.id }
+        #expect(results.count == 3)
+        #expect(Set(results) == [1, 2, 3])
+        #expect(queue.dequeue() == nil)
+    }
+
+    @Test
+    func classPayloadDequeueWithWeight() {
+        var queue = PriorityQueue<PQTestObject, Int>(.ascending)
+        queue.enqueue(PQTestObject(id: 1), weight: 100)
+        queue.enqueue(PQTestObject(id: 2), weight: 200)
+
+        var weight: Int = 0
+        let first = queue.dequeue(weight: &weight)
+        #expect(first?.id == 1)
+        #expect(weight == 100)
+
+        let second = queue.dequeue(weight: &weight)
+        #expect(second?.id == 2)
+        #expect(weight == 200)
+    }
+
 }

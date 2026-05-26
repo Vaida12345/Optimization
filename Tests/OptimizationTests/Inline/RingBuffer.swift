@@ -10,6 +10,20 @@ import Testing
 import Optimization
 
 
+final class RBTestObject: Equatable, CustomStringConvertible {
+    let id: Int
+    var score: Double
+
+    init(id: Int, score: Double = 0) {
+        self.id = id
+        self.score = score
+    }
+
+    static func == (lhs: RBTestObject, rhs: RBTestObject) -> Bool { lhs.id == rhs.id && lhs.score == rhs.score }
+    var description: String { "Obj(\(id))" }
+}
+
+
 @Suite
 struct RingBufferTests {
     
@@ -243,5 +257,91 @@ struct RingBufferTests {
         }
         #expect(extracted == Array(0..<1000))
     }
-    
+
+    @Test
+    func classPayloadAppendRemove() {
+        let ring = RingBuffer<RBTestObject>(minimumCapacity: 4)
+        let obj1 = RBTestObject(id: 1)
+        let obj2 = RBTestObject(id: 2)
+        let obj3 = RBTestObject(id: 3)
+
+        ring.append(obj1)
+        ring.append(obj2)
+        ring.append(obj3)
+
+        #expect(ring.count == 3)
+        #expect(ring.first?.id == 1)
+        #expect(ring.last?.id == 3)
+
+        #expect(ring.removeFirst() === obj1)
+        #expect(ring.removeFirst() === obj2)
+        #expect(ring.removeFirst() === obj3)
+        #expect(ring.isEmpty)
+    }
+
+    @Test
+    func classPayloadPrepend() {
+        let ring = RingBuffer<RBTestObject>(minimumCapacity: 4)
+        let obj1 = RBTestObject(id: 1)
+        let obj2 = RBTestObject(id: 0)
+
+        ring.append(obj1)
+        ring.prepend(obj2)
+
+        #expect(ring.first === obj2)
+        #expect(ring.last === obj1)
+    }
+
+    @Test
+    func classPayloadGrowPreservesIdentity() {
+        let ring = RingBuffer<RBTestObject>(minimumCapacity: 2)
+        let objects = (0..<10).map { RBTestObject(id: $0) }
+
+        for obj in objects {
+            ring.append(obj)
+        }
+
+        #expect(ring.count == 10)
+        #expect(ring.first === objects[0])
+        #expect(ring.last === objects[9])
+    }
+
+    @Test
+    func classPayloadReferenceMutability() {
+        let obj = RBTestObject(id: 42, score: 1.0)
+        let ring = RingBuffer<RBTestObject>(minimumCapacity: 4)
+        ring.append(obj)
+
+        obj.score = 99.0
+
+        #expect(ring.first?.score == 99.0)
+        #expect(ring.first === obj)
+    }
+
+    @Test
+    func classPayloadRemoveLast() {
+        let ring = RingBuffer<RBTestObject>(minimumCapacity: 4)
+        let obj1 = RBTestObject(id: 1)
+        let obj2 = RBTestObject(id: 2)
+
+        ring.append(obj1)
+        ring.append(obj2)
+
+        #expect(ring.removeLast() === obj2)
+        #expect(ring.removeLast() === obj1)
+        #expect(ring.isEmpty)
+    }
+
+    @Test
+    func classPayloadForEach() {
+        let obj1 = RBTestObject(id: 10)
+        let obj2 = RBTestObject(id: 20)
+        let obj3 = RBTestObject(id: 30)
+        let ring: RingBuffer<RBTestObject> = [obj1, obj2, obj3]
+
+        var seen: [Int] = []
+        ring.forEach { seen.append($0.id) }
+        #expect(seen == [10, 20, 30])
+    }
+
 }

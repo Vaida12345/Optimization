@@ -10,6 +10,20 @@ import Testing
 import Optimization
 
 
+final class DequeTestObject: Equatable, CustomStringConvertible {
+    let id: Int
+    var tag: String
+
+    init(id: Int, tag: String = "") {
+        self.id = id
+        self.tag = tag
+    }
+
+    static func == (lhs: DequeTestObject, rhs: DequeTestObject) -> Bool { lhs.id == rhs.id && lhs.tag == rhs.tag }
+    var description: String { "Obj(\(id))" }
+}
+
+
 @Suite
 struct DequeTests {
     
@@ -203,4 +217,84 @@ struct DequeTests {
         #expect(middle.prev == nil)
         #expect(middle.next == nil)
     }
+
+    @Test func classPayloadAppendAndPrepend() {
+        let deque = Deque<DequeTestObject>()
+        let obj1 = DequeTestObject(id: 1)
+        let obj2 = DequeTestObject(id: 2)
+        let obj3 = DequeTestObject(id: 0)
+
+        deque.append(obj1)
+        deque.append(obj2)
+        deque.prepend(obj3)
+
+        #expect(deque.count == 3)
+        #expect(deque.first?.id == 0)
+        #expect(deque.last?.id == 2)
+        #expect(deque.front!.content === obj3)
+        #expect(deque.front!.next!.content === obj1)
+    }
+
+    @Test func classPayloadRemoveFirst() {
+        let obj1 = DequeTestObject(id: 1)
+        let obj2 = DequeTestObject(id: 2)
+        let obj3 = DequeTestObject(id: 3)
+        let deque = Deque([obj1, obj2, obj3])
+
+        let removed = deque.removeFirst()
+        #expect(removed === obj1)
+        #expect(removed?.id == 1)
+        #expect(deque.count == 2)
+        #expect(deque.first?.id == 2)
+    }
+
+    @Test func classPayloadRemoveLast() {
+        let obj1 = DequeTestObject(id: 1)
+        let obj2 = DequeTestObject(id: 2)
+        let obj3 = DequeTestObject(id: 3)
+        let deque = Deque([obj1, obj2, obj3])
+
+        let removed = deque.removeLast()
+        #expect(removed === obj3)
+        #expect(removed?.id == 3)
+        #expect(deque.count == 2)
+        #expect(deque.last?.id == 2)
+    }
+
+    @Test func classPayloadRemoveNode() {
+        let obj1 = DequeTestObject(id: 1)
+        let obj2 = DequeTestObject(id: 2)
+        let obj3 = DequeTestObject(id: 3)
+        let deque = Deque([obj1, obj2, obj3])
+
+        let middle = deque.front!.next!
+        let removed = deque.remove(middle)
+        #expect(removed === obj2)
+        #expect(removed.id == 2)
+        #expect(deque.count == 2)
+        #expect(middle.prev == nil)
+        #expect(middle.next == nil)
+    }
+
+    @Test func classPayloadReferenceMutability() {
+        let obj = DequeTestObject(id: 10, tag: "original")
+        let deque = Deque([obj])
+
+        obj.tag = "modified"
+
+        #expect(deque.first?.tag == "modified")
+        #expect(deque.first === obj)
+    }
+
+    @Test func classPayloadForEach() {
+        let obj1 = DequeTestObject(id: 10)
+        let obj2 = DequeTestObject(id: 20)
+        let obj3 = DequeTestObject(id: 30)
+        let deque = Deque([obj1, obj2, obj3])
+
+        var seen: [Int] = []
+        deque.forEach { seen.append($0.id) }
+        #expect(seen == [10, 20, 30])
+    }
+
 }

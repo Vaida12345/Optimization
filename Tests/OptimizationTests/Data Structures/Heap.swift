@@ -10,6 +10,19 @@ import Testing
 import Optimization
 
 
+final class HeapTestObject: Comparable, CustomStringConvertible {
+    let id: Int
+
+    init(id: Int) {
+        self.id = id
+    }
+
+    static func == (lhs: HeapTestObject, rhs: HeapTestObject) -> Bool { lhs.id == rhs.id }
+    static func < (lhs: HeapTestObject, rhs: HeapTestObject) -> Bool { lhs.id < rhs.id }
+    var description: String { "Obj(\(id))" }
+}
+
+
 @Suite
 struct HeapTests {
     
@@ -189,5 +202,77 @@ struct HeapTests {
         let sorted = Array(heap)
         #expect(sorted == (type == .maxHeap ? ["zebra", "mango", "apple"] : ["apple", "mango", "zebra"]))
     }
-    
+
+    @Test(arguments: [Heap<HeapTestObject>.HeapType.maxHeap, .minHeap])
+    func classPayload(type: Heap<HeapTestObject>.HeapType) async throws {
+        var heap = Heap<HeapTestObject>(type)
+        let obj1 = HeapTestObject(id: 1)
+        let obj2 = HeapTestObject(id: 100)
+        let obj3 = HeapTestObject(id: 2)
+        let obj4 = HeapTestObject(id: 50)
+
+        heap.append(obj1)
+        heap.append(obj2)
+        heap.append(obj3)
+        heap.append(obj4)
+
+        #expect(heap.count == 4)
+        #expect(heap.first?.id == (type == .maxHeap ? 100 : 1))
+        #expect(heap.contains(obj1))
+        #expect(heap.contains(obj2))
+        #expect(heap.contains(obj3))
+        #expect(heap.contains(obj4))
+
+        if type == .maxHeap {
+            #expect(heap.removeFirst()?.id == 100)
+            #expect(heap.removeFirst()?.id == 50)
+            #expect(heap.removeFirst()?.id == 2)
+            #expect(heap.removeFirst()?.id == 1)
+            #expect(heap.removeFirst() == nil)
+        } else {
+            #expect(heap.removeFirst()?.id == 1)
+            #expect(heap.removeFirst()?.id == 2)
+            #expect(heap.removeFirst()?.id == 50)
+            #expect(heap.removeFirst()?.id == 100)
+            #expect(heap.removeFirst() == nil)
+        }
+    }
+
+    @Test(arguments: [Heap<HeapTestObject>.HeapType.maxHeap, .minHeap])
+    func classPayloadLargeHeap(type: Heap<HeapTestObject>.HeapType) async throws {
+        var heap = Heap<HeapTestObject>(type)
+        let objects = (0..<1000).map { HeapTestObject(id: $0) }
+        heap.append(contentsOf: objects)
+
+        var extracted: [Int] = []
+        while let v = heap.next() {
+            extracted.append(v.id)
+        }
+
+        let expected = (0..<1000).sorted(by: { type == .maxHeap ? $0 > $1 : $0 < $1 })
+        #expect(extracted == expected)
+    }
+
+    @Test(arguments: [Heap<HeapTestObject>.HeapType.maxHeap, .minHeap])
+    func classPayloadReferenceIdentity(type: Heap<HeapTestObject>.HeapType) async throws {
+        var heap = Heap<HeapTestObject>(type)
+        let obj = HeapTestObject(id: 42)
+        heap.append(obj)
+
+        let peeked = heap.peek()
+        #expect(peeked === obj)
+        #expect(peeked?.id == 42)
+    }
+
+    @Test
+    func classPayloadDescription() {
+        var heap = Heap<HeapTestObject>(.minHeap)
+        heap.append(HeapTestObject(id: 1))
+        heap.append(HeapTestObject(id: 100))
+        heap.append(HeapTestObject(id: 2))
+        heap.append(HeapTestObject(id: 50))
+
+        #expect(heap.description == "[Obj(1), Obj(2), Obj(50), Obj(100)]")
+    }
+
 }
